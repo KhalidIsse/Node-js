@@ -1,109 +1,30 @@
+require('dotenv').config();
 const express = require('express');
-const app = express();
-const PORT = 3000;
+const mongoose = require('mongoose');
+const bookRoutes = require('./routes/books');
 
-// Middleware to automatically parse incoming JSON payloads
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+// Body Parser Middleware (Crucial for receiving POST/PUT data)
 app.use(express.json());
 
-// In-memory data store with structural mock data
-let books = [
-  { id: 1, title: "The Hobbit", author: "J.R.R. Tolkien" },
-  { id: 2, title: "1984", author: "George Orwell" }
-];
+// API Routes
+app.use('/books', bookRoutes);
 
-let nextId = 3;
-
-// --- API ROUTES ---
-
-/**
- * 1. GET /books
- * Description: Retrieve the entire list of books.
- */
-app.get('/books', (req, res) => {
-  res.status(200).json(books);
+// 😊 SIMPLE FIX: Send a friendly message when visiting http://localhost:4000/
+app.get('/', (req, res) => {
+  res.send('Welcome to my Books API! Use http://localhost:4000/books to see the books.');
 });
 
-/**
- * 2. GET /books/:id
- * Description: Get a single book by its dynamic ID path parameter.
- */
-app.get('/books/:id', (req, res) => {
-  const bookId = parseInt(req.params.id, 10);
-  const book = books.find(b => b.id === bookId);
-
-  if (!book) {
-    return res.status(404).json({ error: "Book not found" });
-  }
-
-  res.status(200).json(book);
-});
-
-/**
- * 3. POST /books
- * Description: Append a brand new book record.
- */
-app.post('/books', (req, res) => {
-  const { title, author } = req.body;
-
-  // Basic validation layer check
-  if (!title || !author) {
-    return res.status(400).json({ error: "Missing required properties: 'title' and 'author' are mandatory." });
-  }
-
-  const newBook = {
-    id: nextId++,
-    title,
-    author
-  };
-
-  books.push(newBook);
-  res.status(201).json(newBook);
-});
-
-/**
- * 4. PUT /books/:id
- * Description: Completely update an existing book metadata profile by ID.
- */
-app.put('/books/:id', (req, res) => {
-  const bookId = parseInt(req.params.id, 10);
-  const { title, author } = req.body;
-
-  // Validate the incoming body attributes
-  if (!title || !author) {
-    return res.status(400).json({ error: "Missing required payload values: 'title' and 'author' must be present." });
-  }
-
-  const bookIndex = books.findIndex(b => b.id === bookId);
-
-  if (bookIndex === -1) {
-    return res.status(404).json({ error: "Book not found" });
-  }
-
-  // Perform full updates on the array index object
-  books[bookIndex] = { id: bookId, title, author };
-  
-  res.status(200).json(books[bookIndex]);
-});
-
-/**
- * 5. DELETE /books/:id
- * Description: Erase a book document resource completely by unique identifier.
- */
-app.delete('/books/:id', (req, res) => {
-  const bookId = parseInt(req.params.id, 10);
-  const bookIndex = books.findIndex(b => b.id === bookId);
-
-  if (bookIndex === -1) {
-    return res.status(404).json({ error: "Book not found" });
-  }
-
-  // Splice removes the target index element out of the active runtime memory array
-  const deletedBook = books.splice(bookIndex, 1);
-  
-  res.status(200).json({ message: "Successfully deleted", book: deletedBook[0] });
-});
-
-// Start the Express application server instances
-app.listen(PORT, () => {
-  console.log(`Server running successfully on http://localhost:${PORT}`);
-});
+// Database connection & Server initialization
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('📦 Connected to MongoDB successfully.');
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Database connection error:', err.message);
+  });
