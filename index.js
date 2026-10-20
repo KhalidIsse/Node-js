@@ -11,7 +11,6 @@ let books = [
   { id: 2, title: "1984", author: "George Orwell" }
 ];
 
-// Helper variable to handle unique auto-incrementing tracking IDs safely
 let nextId = 3;
 
 // --- API ROUTES ---
